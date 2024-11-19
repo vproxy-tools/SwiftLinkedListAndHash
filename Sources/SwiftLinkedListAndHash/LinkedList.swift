@@ -1,13 +1,16 @@
 public struct LinkedList<NODE: LinkedListNode> {
     public var head = NODE()
 
+    @inlinable @inline(__always)
     public init() {}
 
+    @inlinable @inline(__always)
     public mutating func selfInit() {
         head.vars.___prev_ = Unsafe.addressOf(&head)
         head.vars.___next_ = Unsafe.addressOf(&head)
     }
 
+    @inlinable @inline(__always)
     public mutating func first() -> NODE.V? {
         if head.vars.___next_ == nil || head.vars.___next_ == Unsafe.addressOf(&head) {
             return nil
@@ -15,6 +18,7 @@ public struct LinkedList<NODE: LinkedListNode> {
         return Unsafe.convertFromNativeKeepRef(head.vars.___next_!.advanced(by: -(NODE.fieldOffset + CLASS_HEADER_LEN)))
     }
 
+    @inlinable @inline(__always)
     public mutating func last() -> NODE.V? {
         if head.vars.___prev_ == nil || head.vars.___prev_ == Unsafe.addressOf(&head) {
             return nil
@@ -22,10 +26,12 @@ public struct LinkedList<NODE: LinkedListNode> {
         return Unsafe.convertFromNativeKeepRef(head.vars.___prev_!.advanced(by: -(NODE.fieldOffset + CLASS_HEADER_LEN)))
     }
 
+    @inlinable @inline(__always)
     public mutating func seq() -> LinkedListNodeSeq<NODE.V> {
         return LinkedListNodeSeq(head: Unsafe.addressOf(&head), offset: NODE.fieldOffset + CLASS_HEADER_LEN)
     }
 
+    @inlinable @inline(__always)
     public mutating func destroy() {
         if head.vars.___next_ == nil {
             return
@@ -46,11 +52,13 @@ public struct LinkedList<NODE: LinkedListNode> {
     }
 }
 
-let CLASS_HEADER_LEN = 16
+@usableFromInline let CLASS_HEADER_LEN = 16
 
 public struct LinkedListNodeVars {
     public var ___prev_: UnsafeRawPointer?
     public var ___next_: UnsafeRawPointer?
+
+    @inlinable @inline(__always)
     public init() {}
 }
 
@@ -64,11 +72,13 @@ public protocol LinkedListNode<V>: ~Copyable {
 }
 
 public extension LinkedListNode {
+    @inlinable @inline(__always)
     mutating func element() -> V {
         let p = Unsafe.addressOf(&self).advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))
         return Unsafe.convertFromNativeKeepRef(p)
     }
 
+    @inlinable @inline(__always)
     mutating func prev(list: inout LinkedList<Self>) -> V? {
         let phead = Unsafe.addressOf(&list.head)
         if vars.___prev_ == nil || vars.___prev_ == phead || vars.___prev_ == Unsafe.addressOf(&self) {
@@ -77,6 +87,7 @@ public extension LinkedListNode {
         return Unsafe.convertFromNativeKeepRef(vars.___prev_!.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
     }
 
+    @inlinable @inline(__always)
     mutating func next(list: inout LinkedList<Self>) -> V? {
         let phead = Unsafe.addressOf(&list.head)
         if vars.___next_ == nil || vars.___next_ == phead || vars.___next_ == Unsafe.addressOf(&self) {
@@ -85,9 +96,10 @@ public extension LinkedListNode {
         return Unsafe.convertFromNativeKeepRef(vars.___next_!.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
     }
 
+    @inlinable @inline(__always)
     mutating func add(before pnode: UnsafeRawPointer) {
         let pself = Unsafe.addressOf(&self)
-        _ = Unmanaged<V>.fromOpaque(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))).retain()
+        Unsafe.retainNativeRef(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
         let node_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnode)
         let pprev = node_prev.pointee
         let prev_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pprev.advanced(by: 8))
@@ -104,9 +116,10 @@ public extension LinkedListNode {
         self_prev.pointee = pprev
     }
 
+    @inlinable @inline(__always)
     mutating func add(after pnode: UnsafeRawPointer) {
         let pself = Unsafe.addressOf(&self)
-        _ = Unmanaged<V>.fromOpaque(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))).retain()
+        Unsafe.retainNativeRef(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
         let node_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnode.advanced(by: 8))
         let pnext = node_next.pointee
         let next_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnext)
@@ -123,32 +136,39 @@ public extension LinkedListNode {
         self_prev.pointee = pnode
     }
 
+    @inlinable @inline(__always)
     mutating func add(before element: V) {
         let pnode = Unsafe.convertToNativeKeepRef(element).advanced(by: Self.fieldOffset + CLASS_HEADER_LEN)
         add(before: pnode)
     }
 
+    @inlinable @inline(__always)
     mutating func add(after element: V) {
         let pnode = Unsafe.convertToNativeKeepRef(element).advanced(by: Self.fieldOffset + CLASS_HEADER_LEN)
         add(after: pnode)
     }
 
+    @inlinable @inline(__always)
     mutating func add(before node: inout Self) {
         add(before: Unsafe.addressOf(&node))
     }
 
+    @inlinable @inline(__always)
     mutating func add(after node: inout Self) {
         add(after: Unsafe.addressOf(&node))
     }
 
+    @inlinable @inline(__always)
     mutating func addInto(list: inout LinkedList<Self>) {
         add(before: &list.head)
     }
 
+    @inlinable @inline(__always)
     mutating func insertInto(list: inout LinkedList<Self>) {
         add(after: &list.head)
     }
 
+    @inlinable @inline(__always)
     mutating func removeSelf() {
         let pself = Unsafe.addressOf(&self)
         let pprev = vars.___prev_!
@@ -167,21 +187,23 @@ public extension LinkedListNode {
         // self->next = nil
         self_next.pointee = pself
 
-        Unmanaged<V>.fromOpaque(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))).release()
+        Unsafe.releaseNativeRef(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
     }
 }
 
 public struct LinkedListNodeSeq<V: AnyObject>: Sequence {
     public typealias Element = V
     public typealias Iterator = LinkedListNodeIterator<V>
-    private var head: UnsafeRawPointer
-    private let offset: Int
+    @usableFromInline var head: UnsafeRawPointer
+    @usableFromInline let offset: Int
 
+    @inlinable @inline(__always)
     init(head: UnsafeRawPointer, offset: Int) {
         self.head = head
         self.offset = offset
     }
 
+    @inlinable @inline(__always)
     public func makeIterator() -> LinkedListNodeIterator<V> {
         return LinkedListNodeIterator(head: head, offset: offset)
     }
@@ -189,10 +211,11 @@ public struct LinkedListNodeSeq<V: AnyObject>: Sequence {
 
 public struct LinkedListNodeIterator<V: AnyObject>: IteratorProtocol {
     public typealias Element = V
-    private let head: UnsafeRawPointer
-    private var current: UnsafeRawPointer?
-    private let offset: Int
+    @usableFromInline let head: UnsafeRawPointer
+    @usableFromInline var current: UnsafeRawPointer?
+    @usableFromInline let offset: Int
 
+    @inlinable @inline(__always)
     init(head: UnsafeRawPointer, offset: Int) {
         self.head = head
         let next: UnsafePointer<UnsafeRawPointer?> = Unsafe.raw2ptr(head.advanced(by: 8))
@@ -200,6 +223,7 @@ public struct LinkedListNodeIterator<V: AnyObject>: IteratorProtocol {
         self.offset = offset
     }
 
+    @inlinable @inline(__always)
     public mutating func next() -> V? {
         if current == nil || current == head {
             return nil

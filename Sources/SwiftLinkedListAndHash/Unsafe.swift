@@ -1,4 +1,4 @@
-class Unsafe {
+@usableFromInline class Unsafe {
     private init() {}
 
     @inlinable @inline(__always)
@@ -35,5 +35,10 @@ class Unsafe {
     @inlinable @inline(__always)
     public static func releaseNativeRef(_ p: UnsafeRawPointer) {
         Unmanaged<AnyObject>.fromOpaque(p).release()
+    }
+
+    @inlinable @inline(__always)
+    public static func retainNativeRef(_ p: UnsafeRawPointer) {
+        _ = Unmanaged<AnyObject>.fromOpaque(p).retain()
     }
 }
