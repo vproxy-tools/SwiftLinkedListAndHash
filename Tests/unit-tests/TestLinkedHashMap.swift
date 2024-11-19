@@ -46,6 +46,46 @@ class TestLinkedHashMap {
         #expect(testLinkedListDeinitCount == 2)
     }
 
+    @Test func addSame() {
+        testLinkedListNoConcurrency.lock()
+        defer { testLinkedListNoConcurrency.unlock() }
+
+        var map = LinkedHashMap<ValueNode>(1)
+        let (e1, _) = add(&map)
+        var res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 0xf123_e456_d789_cbaf)
+
+        let e = Value(key: Key(a: 0xf123_4567, b: 0xf123), data: 111)
+        e.node.addInto(map: &map)
+
+        res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 0xf123_e456_d789_cbaf)
+
+        e1.node.removeSelf()
+        res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 111)
+    }
+
+    @Test func insertSame() {
+        testLinkedListNoConcurrency.lock()
+        defer { testLinkedListNoConcurrency.unlock() }
+
+        var map = LinkedHashMap<ValueNode>(1)
+        _ = add(&map)
+        var res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 0xf123_e456_d789_cbaf)
+
+        let e = Value(key: Key(a: 0xf123_4567, b: 0xf123), data: 111)
+        e.node.insertInto(map: &map)
+
+        res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 111)
+
+        e.node.removeSelf()
+        res = map[Key(a: 0xf123_4567, b: 0xf123)]!
+        #expect(res.data == 0xf123_e456_d789_cbaf)
+    }
+
     private func add(_ map: inout LinkedHashMap<ValueNode>) -> (Value, Value) {
         let value1 = Value(key: Key(a: 0xf123_4567, b: 0xf123), data: 0xf123_e456_d789_cbaf)
         let value2 = Value(key: Key(a: 0xf123_4566, b: 0xf122), data: 0xf123_e456_d789_cbae)

@@ -91,4 +91,8 @@ public extension LinkedHashMapEntry {
     mutating func addInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
         addInto(list: &(map.hashes[map.indexOf(key: key())].list))
     }
+
+    mutating func insertInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
+        insertInto(list: &(map.hashes[map.indexOf(key: key())].list))
+    }
 }

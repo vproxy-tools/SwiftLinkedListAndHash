@@ -85,24 +85,68 @@ public extension LinkedListNode {
         return Unsafe.convertFromNativeKeepRef(vars.___next_!.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
     }
 
-    mutating func addInto(list: inout LinkedList<Self>) {
+    mutating func add(before pnode: UnsafeRawPointer) {
         let pself = Unsafe.addressOf(&self)
-        let phead = Unsafe.addressOf(&list)
         _ = Unmanaged<V>.fromOpaque(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))).retain()
-        let plast = list.head.vars.___prev_!
-        let last_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(plast.advanced(by: 8))
-        let head_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(phead)
+        let node_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnode)
+        let pprev = node_prev.pointee
+        let prev_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pprev.advanced(by: 8))
         let self_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pself)
         let self_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pself.advanced(by: 8))
 
-        // last->next = self
-        last_next.pointee = pself
-        // self->next = head
-        self_next.pointee = phead
-        // head->prev = self
-        head_prev.pointee = pself
-        // self->prev = last
-        self_prev.pointee = plast
+        // prev->next = self
+        prev_next.pointee = pself
+        // self->next = node
+        self_next.pointee = pnode
+        // node->prev = self
+        node_prev.pointee = pself
+        // self->prev = prev
+        self_prev.pointee = pprev
+    }
+
+    mutating func add(after pnode: UnsafeRawPointer) {
+        let pself = Unsafe.addressOf(&self)
+        _ = Unmanaged<V>.fromOpaque(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN))).retain()
+        let node_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnode.advanced(by: 8))
+        let pnext = node_next.pointee
+        let next_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pnext)
+        let self_prev: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pself)
+        let self_next: UnsafeMutablePointer<UnsafeRawPointer> = Unsafe.raw2mutptr(pself.advanced(by: 8))
+
+        // node->next = self
+        node_next.pointee = pself
+        // self->next = next
+        self_next.pointee = pnext
+        // next->prev = self
+        next_prev.pointee = pself
+        // self->prev = node
+        self_prev.pointee = pnode
+    }
+
+    mutating func add(before element: V) {
+        let pnode = Unsafe.convertToNativeKeepRef(element).advanced(by: Self.fieldOffset + CLASS_HEADER_LEN)
+        add(before: pnode)
+    }
+
+    mutating func add(after element: V) {
+        let pnode = Unsafe.convertToNativeKeepRef(element).advanced(by: Self.fieldOffset + CLASS_HEADER_LEN)
+        add(after: pnode)
+    }
+
+    mutating func add(before node: inout Self) {
+        add(before: Unsafe.addressOf(&node))
+    }
+
+    mutating func add(after node: inout Self) {
+        add(after: Unsafe.addressOf(&node))
+    }
+
+    mutating func addInto(list: inout LinkedList<Self>) {
+        add(before: &list.head)
+    }
+
+    mutating func insertInto(list: inout LinkedList<Self>) {
+        add(after: &list.head)
     }
 
     mutating func removeSelf() {

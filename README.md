@@ -88,6 +88,17 @@ var next  = first!.next(list: &ls) // -> E?
 // remove from the list
 elem.node.removeSelf()
 
+// insert elem to head of the list
+elem.node.insertInto(list: &ls)
+
+// add before or after elem
+for e in ls.seq() {
+    elem1.node.add(before: e)
+    elem2.node.add(after: e)
+    elem3.node.add(before: e.node)
+    elem4.node.add(after: node)
+}
+
 // destroy
 ls.destroy()
 ```
@@ -137,8 +148,14 @@ var map = LinkedHashMap<ValueNode>(1048576) /* will scale to the next power of 2
 // add value into the map
 value.node.addInto(map: &map)
 
+// retrieve value from map
+let v = map[key]
+
 // remove value from the map
 value.node.removeSelf()
+
+// insert value into the map
+value.node.insertInto(map: &map)
 
 // destroy
 map.destroy()

@@ -175,6 +175,48 @@ class TestLinkedList {
         #expect(testLinkedListDeinitCount == 4) // all
     }
 
+    @Test func addBefore() {
+        var ls = LinkedList<ElemNode1>()
+        var tmp = LinkedList<ElemNode2>()
+        ls.selfInit()
+        tmp.selfInit()
+        _ = addNodes(&ls, &tmp)
+        var first = ls.first()!
+        #expect(first.a == 0xf123)
+
+        let e = Elem(a: 1, b: 2, c: 3, d: 4)
+        e.node1.insertInto(list: &ls)
+        first = ls.first()!
+        #expect(first.a == 1)
+    }
+
+    @Test func addWhenIterating() {
+        var ls = LinkedList<ElemNode1>()
+        var tmp = LinkedList<ElemNode2>()
+        ls.selfInit()
+        tmp.selfInit()
+        _ = addNodes(&ls, &tmp)
+
+        for e in ls.seq() {
+            if e.a == 0xf122 {
+                let prev = Elem(a: 1, b: 2, c: 3, d: 4)
+                prev.node1.add(before: e)
+                let next = Elem(a: 9, b: 8, c: 7, d: 6)
+                next.node1.add(after: e)
+                break
+            }
+        }
+
+        var e = ls.first()!
+        #expect(e.a == 0xf123)
+        e = e.node1.next(list: &ls)!
+        #expect(e.a == 1)
+        e = e.node1.next(list: &ls)!
+        #expect(e.a == 0xf122)
+        e = e.node1.next(list: &ls)!
+        #expect(e.a == 9)
+    }
+
     private func addNodes(_ head1: inout LinkedList<ElemNode1>, _ head2: inout LinkedList<ElemNode2>) -> (Elem, Elem, Elem, Elem) {
         let e1 = Elem(a: 0xf123, b: 0xe456_f789, c: 0xd012, d: 0xfe_dcba_0fed_cba0)
         let e2 = Elem(a: 0xf122, b: 0xe456_f788, c: 0xd011, d: 0xfe_dcba_0fed_cba1)
