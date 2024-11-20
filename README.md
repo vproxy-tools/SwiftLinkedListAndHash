@@ -54,12 +54,12 @@ class Elem {
     var node2 = ElemNode2()
     // ...
 }
-struct ElemNode: LinkedListNode {
+struct ElemNode1: LinkedListNode {
     typealias V = Elem
     var vars = LinkedListNodeVars()
     static let fieldOffset = 0
 }
-struct ElemNode: LinkedListNode {
+struct ElemNode2: LinkedListNode {
     typealias V = Elem
     var vars = LinkedListNodeVars()
     static let fieldOffset = 16
@@ -93,8 +93,11 @@ elem.node.insertInto(list: &ls)
 
 // add before or after elem
 for e in ls.seq() {
+    // insert by element
     elem1.node.add(before: e)
     elem2.node.add(after: e)
+
+    // insert by node
     elem3.node.add(before: e.node)
     elem4.node.add(after: node)
 }
