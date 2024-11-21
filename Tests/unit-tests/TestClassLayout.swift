@@ -1,5 +1,5 @@
-import Testing
 import SwiftLinkedListAndHash
+import Testing
 
 class TestClassLayout {
     @Test func classHeader() {

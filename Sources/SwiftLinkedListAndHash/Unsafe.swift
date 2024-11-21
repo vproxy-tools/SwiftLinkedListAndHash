@@ -49,5 +49,4 @@
 }
 
 @_optimize(none) @inlinable @inline(__always)
-public func ENSURE_REFERENCE_COUNTED<T>(_ t: T...) {
-}
+public func ENSURE_REFERENCE_COUNTED<T>(_: T...) {}

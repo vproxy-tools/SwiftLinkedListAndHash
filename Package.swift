@@ -19,8 +19,8 @@ let package = Package(
             dependencies: ["SwiftLinkedListAndHash"],
             swiftSettings: [
                 .unsafeFlags([
-                    "-Ounchecked"
-                ])
+                    "-Ounchecked",
+                ]),
             ]
         ),
     ]
