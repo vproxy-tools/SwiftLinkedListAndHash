@@ -1,14 +1,17 @@
 public typealias LinkedHashMap<ENTRY> = GeneralLinkedHashMap<LinkedHash<ENTRY>, ENTRY> where ENTRY: LinkedHashMapEntry
 
 public struct GeneralLinkedHashMap<HASH, ENTRY: LinkedHashMapEntry>: ~Copyable where HASH: LinkedHashProtocol<ENTRY> {
-    @inlinable @inline(__always) var modsz: Int { hashes.count - 1 }
-    public var hashes: [HASH]
+    @usableFromInline let modsz: Int
+    @usableFromInline let hashes: [UInt64]
 
     @inlinable @inline(__always)
     public init(_ hashSizeHint: Int) {
-        hashes = [HASH](repeating: HASH(), count: Self.findNextPowerOf2(hashSizeHint))
-        for idx in hashes.indices {
-            hashes[idx].selfInit()
+        let size = Self.findNextPowerOf2(hashSizeHint)
+        modsz = size - 1
+        hashes = [UInt64](repeating: 0, count: size * MemoryLayout<HASH>.stride / 8)
+        for idx in 0 ... modsz {
+            self[idx].pointee.initStruct()
+            self[idx].pointee.selfInit()
         }
     }
 
@@ -30,6 +33,12 @@ public struct GeneralLinkedHashMap<HASH, ENTRY: LinkedHashMapEntry>: ~Copyable w
     }
 
     @inlinable @inline(__always)
+    public subscript(_ i: Int) -> UnsafeMutablePointer<HASH> {
+        let p: UnsafeMutablePointer<HASH> = Unsafe.raw2mutptr(hashes.withUnsafeBufferPointer { p in p.baseAddress! })
+        return p.advanced(by: i)
+    }
+
+    @inlinable @inline(__always)
     public func indexOf(key: ENTRY.K) -> Int {
         return key.hashValue & modsz
     }
@@ -37,16 +46,13 @@ public struct GeneralLinkedHashMap<HASH, ENTRY: LinkedHashMapEntry>: ~Copyable w
     @inlinable @inline(__always)
     public subscript(_ key: ENTRY.K) -> ENTRY.V? {
         @inlinable @inline(__always)
-        mutating get {
-            let idx = key.hashValue & modsz
-            return hashes[idx][key]
-        }
+        mutating get { self[indexOf(key: key)].pointee[key] }
     }
 
     @inlinable @inline(__always)
     public mutating func destroy() {
-        for i in hashes.indices {
-            hashes[i].destroy()
+        for i in 0 ... modsz {
+            self[i].pointee.destroy()
         }
     }
 }
@@ -55,7 +61,7 @@ public protocol LinkedHashProtocol<ENTRY>: ~Copyable {
     associatedtype ENTRY: LinkedHashMapEntry
 
     var list: LinkedList<ENTRY> { get set }
-    init()
+    mutating func initStruct()
 }
 
 public extension LinkedHashProtocol {
@@ -89,6 +95,7 @@ public struct LinkedHash<ENTRY: LinkedHashMapEntry>: LinkedHashProtocol {
     public var list = LinkedList<ENTRY>()
     @inlinable @inline(__always)
     public init() {}
+    public mutating func initStruct() {}
 }
 
 public protocol LinkedHashMapEntry<K, V>: LinkedListNode {
@@ -100,11 +107,11 @@ public protocol LinkedHashMapEntry<K, V>: LinkedListNode {
 public extension LinkedHashMapEntry {
     @inlinable @inline(__always)
     mutating func addInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
-        addInto(list: &(map.hashes[map.indexOf(key: key())].list))
+        addInto(list: &(map[map.indexOf(key: key())].pointee.list))
     }
 
     @inlinable @inline(__always)
     mutating func insertInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
-        insertInto(list: &(map.hashes[map.indexOf(key: key())].list))
+        insertInto(list: &(map[map.indexOf(key: key())].pointee.list))
     }
 }

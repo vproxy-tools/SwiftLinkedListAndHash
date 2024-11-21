@@ -173,9 +173,13 @@ A more general impl is provided, for you to specify your own `LinkedHash` struct
 ```swift
 // code extracted from `wkgcass/swift-vswitch`, `Conntrack.swift`
 public struct GlobalConntrackHash: LinkedHashProtocol {
-    var lock = RWLockRef()
-    public var list = LinkedList<GlobalConnEntryNode>()
+    private var lock_: RWLockRef?
+    var lock: RWLockRef { lock_! }
+    public var list: LinkedList<GlobalConnEntryNode>
 
+    public mutating func initStruct() {
+        lock_ = RWLockRef()
+    }
     // ... other ...
 }
 ```

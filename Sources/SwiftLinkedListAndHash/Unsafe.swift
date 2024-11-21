@@ -7,6 +7,11 @@
     }
 
     @inlinable @inline(__always)
+    public static func ptr2mutUnsafe<T, U>(_ p: UnsafePointer<T>) -> UnsafeMutablePointer<U> {
+        return raw2mutptr(ptr2raw(p))
+    }
+
+    @inlinable @inline(__always)
     public static func raw2ptr<T>(_ raw: UnsafeRawPointer) -> UnsafePointer<T> {
         return raw.assumingMemoryBound(to: T.self)
     }
