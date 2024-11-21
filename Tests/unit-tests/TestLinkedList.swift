@@ -203,6 +203,7 @@ class TestLinkedList {
                 prev.node1.add(before: e)
                 let next = Elem(a: 9, b: 8, c: 7, d: 6)
                 next.node1.add(after: e)
+                ENSURE_REFERENCE_COUNTED(prev, next)
                 break
             }
         }

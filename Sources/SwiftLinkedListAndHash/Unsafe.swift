@@ -42,3 +42,7 @@
         _ = Unmanaged<AnyObject>.fromOpaque(p).retain()
     }
 }
+
+@_optimize(none) @inlinable @inline(__always)
+public func ENSURE_REFERENCE_COUNTED<T>(_ t: T...) {
+}

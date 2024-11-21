@@ -192,9 +192,18 @@ var map = GeneralLinkedHashMap<GlobalConntrackHash, GlobalConnEntryNode>()
 
 ## NOTE
 
+### LinkedHashMap behavior
+
 The `LinkedHashMap` behavior is not the same as traditional `Dictionary` nor `Map`.  
 Multiple entries with the same key could exist at the same time. This is by design.
 
-With this behavior, we don't have to follow the order of removing-then-adding, we could always add the new entry into the map then removing the old one later, without causing any trouble. If we want the new entry to take effect, simply insert the new entry to the head of the hash list, otherwise tail.
+With this behavior, we don't have to follow the order of removing-then-adding, we could always add the new entry into the map then remove the old one later, without causing any trouble. If we want the new entry to take effect, simply insert the new entry to the head of the hash list, otherwise tail.
 
 This is very useful when we want to overwrite an entry, but the entry's lifecycle is managed by someone else.
+
+### Optimize with `-Ounchecked`
+
+When compiled with `-Ounchecked`, you **MUST** ensure the objects of your value type are actually reference counted.  
+In some cases the compiler may think that they are short lived and they could be released without checking the reference counter.
+
+You can use `ENSURE_REFERENCE_COUNTED(elem)` to ensure it's reference counted.

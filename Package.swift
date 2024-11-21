@@ -16,7 +16,12 @@ let package = Package(
         // test cases
         .testTarget(
             name: "unit-tests",
-            dependencies: ["SwiftLinkedListAndHash"]
+            dependencies: ["SwiftLinkedListAndHash"],
+            swiftSettings: [
+                .unsafeFlags([
+                    "-Ounchecked"
+                ])
+            ]
         ),
     ]
 )
