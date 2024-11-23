@@ -52,16 +52,13 @@ public struct LinkedList<NODE: LinkedListNode> {
     }
 }
 
-private class ClassUsedToTestHeaderLen {
-    var a: UInt8 = 0
-}
+public class LinkedListRef<NODE: LinkedListNode> {
+    public var list = LinkedList<NODE>()
 
-@usableFromInline let CLASS_HEADER_LEN = { () -> Int in
-    let c = ClassUsedToTestHeaderLen()
-    let addrA = Unsafe.addressOf(&c.a)
-    let addrC = Unmanaged.passUnretained(c).toOpaque()
-    return Int(bitPattern: addrA) - Int(bitPattern: addrC)
-}()
+    deinit {
+        list.destroy()
+    }
+}
 
 public struct LinkedListNodeVars {
     public var ___prev_: UnsafeRawPointer?

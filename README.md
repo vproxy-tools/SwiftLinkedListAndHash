@@ -164,7 +164,7 @@ value.node.insertInto(map: &map)
 map.destroy()
 ```
 
-## `GeneralLinkedHashMap`
+## GeneralLinkedHashMap
 
 ### 1. definition
 
@@ -193,6 +193,64 @@ You could define extra variables or functions here, for example, you could put a
 ```swift
 var map = GeneralLinkedHashMap<GlobalConntrackHash, GlobalConnEntryNode>()
 ```
+
+## TimeWheel
+
+A timewheel with custom tick precision and time levels.  
+Similar to the above two data structures, you will need to define your own `TimeNode`, and put the `TimeNode` into your own data structure.
+
+### 1. define data type for `TimeWheel`
+
+```swift
+class TimeElem {
+    var node = TimeElemNode()
+    let num: Int
+
+    init(_ num: Int) {
+        self.num = num
+    }
+}
+
+struct TimeElemNode: TimeNode {
+    typealias V = TimeElem
+
+    var vars = LinkedListNodeVars()
+    var triggerTime: Int64 = 0
+    static let fieldOffset: Int = 0
+
+    init() {}
+}
+```
+
+### 2. using the `TimeWheel`
+
+```swift
+// define a timewheel with:
+//   1. tick precision is 1sec
+//   2. first level has 60 ticks, which means 1 minute
+//   3. second level has 60 ticks, which means 1 hour
+//   4. third level has 24 ticks, which means 1 day
+// the timewheel can safely handle time events 23 hours later after the last `poll()`
+// and could handle maximum 24 hours time events
+let w = TimeWheel<TimeElemNode>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
+
+let elem1 = TimeElem(1)
+elem1.node.triggerTime = 120_000 // will trigger after 2 minutes
+_ = elem1.node.addInto(wheel: w) // add the time event into timewheel
+
+// get triggered time events
+let res = w.poll(currentTimeMillis: /* ... */)
+// iterate through the triggered time events
+for e in ret.list.seq() {
+    print(e.num)
+}
+
+let elem2 = TimeElem(2)
+elem2.node.triggerTime = 1000 * 60 * 60 * 24 + 1 // more than 24 hours
+let succeeded = elem2.node.addInto(wheel: w) // succeeded == false
+```
+
+Both the `TimeWheel` and result of `poll()` are reference counted, so they can be automatically released.  
 
 ## NOTE
 
