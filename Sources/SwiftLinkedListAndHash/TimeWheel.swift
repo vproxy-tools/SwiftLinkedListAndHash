@@ -1,14 +1,17 @@
 public class TimeWheel<NODE: TimeNode> {
-    let precisionMillis: Int64
-    let totalLevels: Int
-    let maxTime: Int64
-    let levels: [UInt64]
+    @usableFromInline let precisionMillis: Int64
+    @usableFromInline let totalLevels: Int
+    @usableFromInline let maxTime: Int64
+    @usableFromInline let levels: [UInt64]
+    @usableFromInline var count_: Int = 0
+    @inlinable @inline(__always) public var count: Int { count_ }
 
-    var lastTs: Int64 = 0
+    @usableFromInline var lastTs: Int64 = 0
 
     // for example, .init(precisionMillis: 1000, levelTicks: 60, 60, 24)
     // would create a timewheel for one day
     // to be more precise, safely 23 hours, max 24 hours
+    @inlinable @inline(__always)
     public init(currentTimeMillis: Int64, precisionMillis: Int64, levelTicks: Int, _ moreTicks: Int...) {
         lastTs = currentTimeMillis
         self.precisionMillis = precisionMillis
@@ -27,15 +30,18 @@ public class TimeWheel<NODE: TimeNode> {
         }
     }
 
+    @inlinable @inline(__always)
     subscript(_ index: Int) -> UnsafeMutablePointer<TimeLevel<NODE>> {
         let p: UnsafeMutablePointer<TimeLevel<NODE>> = Unsafe.raw2mutptr(levels.withUnsafeBufferPointer { p in p.baseAddress! })
         return p.advanced(by: index)
     }
 
+    @inlinable @inline(__always)
     func add(n: inout NODE) -> Bool {
         if n.triggerTime <= lastTs {
             let p = self[0]
             n.addInto(list: &(p.pointee[p.pointee.curr].pointee))
+            count_ += 1
             return true
         }
 
@@ -47,11 +53,53 @@ public class TimeWheel<NODE: TimeNode> {
                 continue
             }
             p.pointee.add(current: lastTs, precision: precision, n: &n)
+            count_ += 1
             return true
         }
         return false
     }
 
+    @inlinable @inline(__always)
+    public func nextTime() -> Int64 {
+        if count == 0 {
+            return Int64.max
+        }
+        var precision = precisionMillis
+        // for the first level:
+        let p = self[0]
+        for idx in p.pointee.curr ..< p.pointee.tickCount {
+            if p.pointee[idx].pointee.head.vars.___next_ == Unsafe.addressOf(&p.pointee[idx].pointee.head) {
+                // empty
+                continue
+            }
+            return Int64(idx - p.pointee.curr) * precision + lastTs
+        }
+        precision *= Int64(p.pointee.tickCount)
+        for levelIdx in 1 ..< totalLevels {
+            let p = self[levelIdx]
+            for idx in p.pointee.curr ..< p.pointee.tickCount {
+                if p.pointee[idx].pointee.head.vars.___next_ == Unsafe.addressOf(&p.pointee[idx].pointee.head) {
+                    // empty
+                    continue
+                }
+                var minTriggerTime = Int64.max
+                let head = Unsafe.addressOf(&p.pointee[idx].pointee.head)
+                var node = p.pointee[idx].pointee.head.vars.___next_
+                while node != head {
+                    let pnode: UnsafePointer<NODE> = Unsafe.raw2ptr(node!)
+                    if pnode.pointee.triggerTime < minTriggerTime {
+                        minTriggerTime = pnode.pointee.triggerTime
+                    }
+                    node = pnode.pointee.vars.___next_
+                }
+                return minTriggerTime
+            }
+            precision *= Int64(p.pointee.tickCount)
+        }
+        return Int64.max // won't happen
+    }
+
+    @inlinable @inline(__always)
     public func poll(currentTimeMillis: Int64) -> LinkedListRef<NODE> {
         let lastTs = lastTs
         self.lastTs = currentTimeMillis
@@ -91,17 +139,21 @@ public class TimeWheel<NODE: TimeNode> {
             } else {
                 p.pointee.curr = 0
             }
-            expand(level: levelIdx, current: currentTimeMillis, precision: precision, tail: &tail)
+            expand(level: levelIdx, current: currentTimeMillis, precision: precision, list: ret, tail: &tail)
             if toIndex < p.pointee.tickCount {
                 break
             }
             precision *= Int64(p.pointee.tickCount)
         }
         tail.pointee.vars.___next_ = Unsafe.addressOf(&ret.list.head)
+        ret.list.head.vars.___prev_ = Unsafe.ptr2raw(tail)
+
+        count_ -= ret.list.count
         return ret
     }
 
-    func expand(level: Int, current: Int64, precision: Int64, tail: inout UnsafeMutablePointer<NODE>) {
+    @inlinable @inline(__always)
+    func expand(level: Int, current: Int64, precision: Int64, list: LinkedListRef<NODE>, tail: inout UnsafeMutablePointer<NODE>) {
         if level == 0 {
             return
         }
@@ -111,7 +163,7 @@ public class TimeWheel<NODE: TimeNode> {
         for e in p.pointee[p.pointee.curr].pointee.seq() {
             let pn: UnsafeMutablePointer<NODE> =
                 Unsafe.raw2mutptr(Unsafe.convertToNativeKeepRef(e).advanced(by: NODE.fieldOffset + CLASS_HEADER_LEN))
-            pn.pointee.removeSelf()
+            pn.pointee.removeSelf(releaseRef: false)
             let triggerTime = if pn.pointee.triggerTime % prevPrecision == 0 {
                 pn.pointee.triggerTime
             } else {
@@ -121,6 +173,7 @@ public class TimeWheel<NODE: TimeNode> {
                 // should trigger
                 tail.pointee.vars.___next_ = Unsafe.ptr2raw(pn)
                 pn.pointee.vars.___prev_ = Unsafe.ptr2raw(tail)
+                pn.pointee.vars.___next_ = Unsafe.addressOf(&list.list.head)
                 tail = pn
             } else {
                 // should be put into ticks
@@ -129,6 +182,7 @@ public class TimeWheel<NODE: TimeNode> {
         }
     }
 
+    @inlinable @inline(__always)
     deinit {
         for i in 0 ..< totalLevels {
             let p = self[i]
@@ -144,16 +198,19 @@ public protocol TimeNode<V>: LinkedListNode {
 }
 
 public extension TimeNode {
+    @inlinable @inline(__always)
     mutating func addInto(wheel: TimeWheel<Self>) -> Bool {
         return wheel.add(n: &self)
     }
 }
 
+@usableFromInline
 struct TimeLevel<NODE: TimeNode> {
-    var tickCount: Int
-    var curr: Int = 0
-    private var ticks: [UInt64]
+    @usableFromInline var tickCount: Int
+    @usableFromInline var curr: Int = 0
+    @usableFromInline var ticks: [UInt64]
 
+    @inlinable @inline(__always)
     mutating func selfInit(tickCount: Int) {
         self.tickCount = tickCount
         let memSize = MemoryLayout<LinkedList<NODE>>.stride
@@ -163,11 +220,13 @@ struct TimeLevel<NODE: TimeNode> {
         }
     }
 
+    @inlinable @inline(__always)
     subscript(_ index: Int) -> UnsafeMutablePointer<LinkedList<NODE>> {
         let p: UnsafeMutablePointer<LinkedList<NODE>> = Unsafe.raw2mutptr(ticks.withUnsafeBufferPointer { p in p.baseAddress! })
         return p.advanced(by: index)
     }
 
+    @inlinable @inline(__always)
     func maxTime(current: Int64, precision: Int64) -> Int64 {
         var current = current
         if current % precision != 0 {
@@ -176,6 +235,7 @@ struct TimeLevel<NODE: TimeNode> {
         return current + precision * Int64(tickCount - curr)
     }
 
+    @inlinable @inline(__always)
     func add(current: Int64, precision: Int64, n: inout NODE) {
         var current = current
         if current % precision != 0 {
@@ -184,6 +244,7 @@ struct TimeLevel<NODE: TimeNode> {
         n.addInto(list: &(self[Int((n.triggerTime - current) / precision) + curr].pointee))
     }
 
+    @inlinable @inline(__always)
     func pollToIndex(current: Int64, to: Int64, precision: Int64) -> Int {
         var current = current
         if current % precision != 0 {

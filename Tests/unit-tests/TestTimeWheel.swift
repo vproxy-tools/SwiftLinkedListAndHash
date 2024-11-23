@@ -7,14 +7,22 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
+
+        let next = w.nextTime()
+        #expect(next == 110_000)
 
         var ret = w.poll(currentTimeMillis: 105_000)
         #expect(ret.list.first() == nil)
+        #expect(w.count == 1)
+
         ret = w.poll(currentTimeMillis: 110_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 0)
 
         ret = w.poll(currentTimeMillis: 110_000)
         #expect(ret.list.first() == nil)
+        #expect(w.count == 0)
     }
 
     @Test func withinThisTick() {
@@ -22,12 +30,15 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 100_010
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
 
         var ret = w.poll(currentTimeMillis: 100_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 0)
 
         ret = w.poll(currentTimeMillis: 100_000)
         #expect(ret.list.first() == nil)
+        #expect(w.count == 0)
     }
 
     @Test func inThePast() {
@@ -35,12 +46,18 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 90000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
+
+        let next = w.nextTime()
+        #expect(next == 100_000)
 
         var ret = w.poll(currentTimeMillis: 100_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 0)
 
         ret = w.poll(currentTimeMillis: 100_000)
         #expect(ret.list.first() == nil)
+        #expect(w.count == 0)
     }
 
     @Test func multipleInOneTick() {
@@ -48,11 +65,15 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 110_050
         _ = elem2.node.addInto(wheel: w)
+        #expect(w.count == 2)
 
         let ret = w.poll(currentTimeMillis: 110_000)
+        #expect(w.count == 0)
+
         var lastIndex = -1
         for (i, e) in ret.list.seq().enumerated() {
             if i == 0 {
@@ -70,14 +91,20 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
+
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 120_000
         _ = elem2.node.addInto(wheel: w)
+        #expect(w.count == 2)
 
         var ret = w.poll(currentTimeMillis: 115_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 1)
+
         ret = w.poll(currentTimeMillis: 120_000)
         #expect(ret.list.first() === elem2)
+        #expect(w.count == 0)
     }
 
     @Test func multipleTicksOnePoll() {
@@ -85,11 +112,16 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
+
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 120_000
         _ = elem2.node.addInto(wheel: w)
+        #expect(w.count == 2)
 
         let ret = w.poll(currentTimeMillis: 120_000)
+        #expect(w.count == 0)
+
         var lastIndex = -1
         for (i, e) in ret.list.seq().enumerated() {
             if i == 0 {
@@ -107,12 +139,21 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 175_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
+
+        var next = w.nextTime()
+        #expect(next == 175_000)
 
         var ret = w.poll(currentTimeMillis: 160_000)
         #expect(ret.list.first() == nil)
+        #expect(w.count == 1)
+
+        next = w.nextTime()
+        #expect(next == 175_000)
 
         ret = w.poll(currentTimeMillis: 175_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 0)
     }
 
     @Test func returnOnExpand() {
@@ -120,9 +161,11 @@ class TestTimeWheel {
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 175_000
         _ = elem1.node.addInto(wheel: w)
+        #expect(w.count == 1)
 
         let ret = w.poll(currentTimeMillis: 175_000)
         #expect(ret.list.first() === elem1)
+        #expect(w.count == 0)
     }
 
     @Test func expandReturnAndFillTicks() {

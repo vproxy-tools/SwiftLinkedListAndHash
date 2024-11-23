@@ -50,11 +50,39 @@ public struct LinkedList<NODE: LinkedListNode> {
         self.head.vars.___prev_ = nil
         self.head.vars.___next_ = nil
     }
+
+    @inlinable @inline(__always)
+    public var count: Int {
+        @inlinable @inline(__always)
+        mutating get {
+            var ret = 0
+            var node = head.vars.___next_
+            let head = Unsafe.addressOf(&head)
+            if node == nil {
+                return 0
+            }
+            while node != head {
+                ret += 1
+                let p: UnsafePointer<NODE> = Unsafe.raw2ptr(node!)
+                node = p.pointee.vars.___next_
+            }
+            return ret
+        }
+    }
 }
 
 public class LinkedListRef<NODE: LinkedListNode> {
     public var list = LinkedList<NODE>()
+    @inlinable @inline(__always)
+    public var count: Int { list.count }
 
+    @inlinable @inline(__always)
+    public init() {}
+
+    @inlinable @inline(__always)
+    public func seq() -> LinkedListNodeSeq<NODE.V> { list.seq() }
+
+    @inlinable @inline(__always)
     deinit {
         list.destroy()
     }
@@ -175,7 +203,7 @@ public extension LinkedListNode {
     }
 
     @inlinable @inline(__always)
-    mutating func removeSelf() {
+    mutating func removeSelf(releaseRef: Bool = true) {
         let pself = Unsafe.addressOf(&self)
         let pprev = vars.___prev_!
         let pnext = vars.___next_!
@@ -193,7 +221,9 @@ public extension LinkedListNode {
         // self->next = nil
         self_next.pointee = pself
 
-        Unsafe.releaseNativeRef(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
+        if releaseRef {
+            Unsafe.releaseNativeRef(pself.advanced(by: -(Self.fieldOffset + CLASS_HEADER_LEN)))
+        }
     }
 }
 
