@@ -3,8 +3,6 @@ public class TimeWheel<NODE: TimeNode> {
     @usableFromInline let totalLevels: Int
     @usableFromInline let maxTime: Int64
     @usableFromInline let levels: [UInt64]
-    @usableFromInline var count_: Int = 0
-    @inlinable @inline(__always) public var count: Int { count_ }
 
     @usableFromInline var lastTs: Int64 = 0
 
@@ -41,7 +39,6 @@ public class TimeWheel<NODE: TimeNode> {
         if n.triggerTime <= lastTs {
             let p = self[0]
             n.addInto(list: &(p.pointee[p.pointee.curr].pointee))
-            count_ += 1
             return true
         }
 
@@ -53,17 +50,29 @@ public class TimeWheel<NODE: TimeNode> {
                 continue
             }
             p.pointee.add(current: lastTs, precision: precision, n: &n)
-            count_ += 1
             return true
         }
         return false
     }
 
     @inlinable @inline(__always)
-    public func nextTime() -> Int64 {
-        if count == 0 {
-            return Int64.max
+    public func nextTimeFast() -> Int64 {
+        let precision = precisionMillis
+        // for the first level:
+        let p = self[0]
+        for idx in p.pointee.curr ..< p.pointee.tickCount {
+            if p.pointee[idx].pointee.head.vars.___next_ == Unsafe.addressOf(&p.pointee[idx].pointee.head) {
+                // empty
+                continue
+            }
+            return Int64(idx - p.pointee.curr) * precision + lastTs
         }
+        // no? but we've only checked the first level
+        return Int64(p.pointee.tickCount) * precision + lastTs
+    }
+
+    @inlinable @inline(__always)
+    public func nextTimeAccurate() -> Int64 {
         var precision = precisionMillis
         // for the first level:
         let p = self[0]
@@ -96,7 +105,7 @@ public class TimeWheel<NODE: TimeNode> {
             }
             precision *= Int64(p.pointee.tickCount)
         }
-        return Int64.max // won't happen
+        return Int64.max
     }
 
     @inlinable @inline(__always)
@@ -148,7 +157,6 @@ public class TimeWheel<NODE: TimeNode> {
         tail.pointee.vars.___next_ = Unsafe.addressOf(&ret.list.head)
         ret.list.head.vars.___prev_ = Unsafe.ptr2raw(tail)
 
-        count_ -= ret.list.count
         return ret
     }
 
