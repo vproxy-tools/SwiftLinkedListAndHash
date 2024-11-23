@@ -203,7 +203,22 @@ public extension LinkedListNode {
     }
 
     @inlinable @inline(__always)
+    var isInList: Bool {
+        @inlinable @inline(__always)
+        mutating get {
+            let pself = Unsafe.addressOf(&self)
+            let pprev = vars.___prev_
+            let pnext = vars.___next_
+            return pprev != pnext && pprev != nil && pnext != nil
+        }
+    }
+
+    @inlinable @inline(__always)
     mutating func removeSelf(releaseRef: Bool = true) {
+        if !isInList {
+            return
+        }
+
         let pself = Unsafe.addressOf(&self)
         let pprev = vars.___prev_!
         let pnext = vars.___next_!
