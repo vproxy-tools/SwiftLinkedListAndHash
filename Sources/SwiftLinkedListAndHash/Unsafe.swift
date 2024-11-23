@@ -46,7 +46,21 @@
     public static func retainNativeRef(_ p: UnsafeRawPointer) {
         _ = Unmanaged<AnyObject>.fromOpaque(p).retain()
     }
+
+    @inlinable @inline(__always)
+    public static func any2mutptr<T>(_ p: UnsafeMutablePointer<T>) -> UnsafeMutablePointer<T> { p }
 }
 
 @_optimize(none) @inlinable @inline(__always)
 public func ENSURE_REFERENCE_COUNTED<T>(_: T...) {}
+
+private class ClassUsedToTestHeaderLen {
+    var a: UInt8 = 0
+}
+
+@usableFromInline let CLASS_HEADER_LEN = { () -> Int in
+    let c = ClassUsedToTestHeaderLen()
+    let addrA = Unsafe.addressOf(&c.a)
+    let addrC = Unmanaged.passUnretained(c).toOpaque()
+    return Int(bitPattern: addrA) - Int(bitPattern: addrC)
+}()

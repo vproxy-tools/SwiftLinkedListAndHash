@@ -1,17 +1,20 @@
-public typealias LinkedHashMap<ENTRY> = GeneralLinkedHashMap<LinkedHash<ENTRY>, ENTRY> where ENTRY: LinkedHashMapEntry
+public typealias LinkedHashMap<ENTRY: LinkedHashMapEntry> = GeneralLinkedHashMap<LinkedHash<ENTRY>, ENTRY>
 
-public struct GeneralLinkedHashMap<HASH, ENTRY: LinkedHashMapEntry>: ~Copyable where HASH: LinkedHashProtocol<ENTRY> {
-    @usableFromInline let modsz: Int
-    @usableFromInline let hashes: [UInt64]
+public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: LinkedHashMapEntry>: ~Copyable {
+    @usableFromInline var modsz: Int { hashes.count - 1 }
+    @usableFromInline var hashes: [HASH]
 
     @inlinable @inline(__always)
     public init(_ hashSizeHint: Int) {
         let size = Self.findNextPowerOf2(hashSizeHint)
-        modsz = size - 1
-        hashes = [UInt64](repeating: 0, count: size * MemoryLayout<HASH>.stride / 8)
-        for idx in 0 ... modsz {
-            self[idx].pointee.initStruct()
-            self[idx].pointee.selfInit()
+        hashes = .init(unsafeUninitializedCapacity: size) { _, sz in sz = size }
+        let u8p: UnsafeMutablePointer<UInt8> = Unsafe.raw2mutptr(hashes.withUnsafeBufferPointer { p in p.baseAddress! })
+        for i in 0 ..< size * MemoryLayout<HASH>.stride {
+            u8p.advanced(by: i).pointee = 0
+        }
+        for i in 0 ..< hashes.count {
+            hashes[i].initStruct()
+            hashes[i].selfInit()
         }
     }
 
@@ -51,9 +54,28 @@ public struct GeneralLinkedHashMap<HASH, ENTRY: LinkedHashMapEntry>: ~Copyable w
 
     @inlinable @inline(__always)
     public mutating func destroy() {
-        for i in 0 ... modsz {
-            self[i].pointee.destroy()
+        for i in 0 ..< hashes.count {
+            hashes[i].destroy()
         }
+    }
+}
+
+public typealias LinkedHashMapRef<ENTRY: LinkedHashMapEntry> = GeneralLinkedHashMapRef<LinkedHash<ENTRY>, ENTRY>
+
+public class GeneralLinkedHashMapRef<HASH: LinkedHashProtocol<ENTRY>, ENTRY: LinkedHashMapEntry> {
+    public var pointee: GeneralLinkedHashMap<HASH, ENTRY>
+
+    @inlinable @inline(__always)
+    public init(_ hashSizeHint: Int) {
+        pointee = .init(hashSizeHint)
+    }
+
+    @inlinable @inline(__always)
+    public subscript(_ key: ENTRY.K) -> ENTRY.V? { pointee[key] }
+
+    @inlinable @inline(__always)
+    deinit {
+        pointee.destroy()
     }
 }
 
@@ -106,12 +128,22 @@ public protocol LinkedHashMapEntry<K, V>: LinkedListNode {
 
 public extension LinkedHashMapEntry {
     @inlinable @inline(__always)
-    mutating func addInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
+    mutating func addInto<HASH: LinkedHashProtocol<Self>>(map: inout GeneralLinkedHashMap<HASH, Self>) {
         addInto(list: &(map[map.indexOf(key: key())].pointee.list))
     }
 
     @inlinable @inline(__always)
-    mutating func insertInto<HASH>(map: inout GeneralLinkedHashMap<HASH, Self>) where HASH: LinkedHashProtocol<Self> {
+    mutating func insertInto<HASH: LinkedHashProtocol<Self>>(map: inout GeneralLinkedHashMap<HASH, Self>) {
         insertInto(list: &(map[map.indexOf(key: key())].pointee.list))
+    }
+
+    @inlinable @inline(__always)
+    mutating func addInto<HASH: LinkedHashProtocol<Self>>(map: GeneralLinkedHashMapRef<HASH, Self>) {
+        addInto(map: &map.pointee)
+    }
+
+    @inlinable @inline(__always)
+    mutating func insertInto<HASH: LinkedHashProtocol<Self>>(map: GeneralLinkedHashMapRef<HASH, Self>) {
+        insertInto(map: &map.pointee)
     }
 }
