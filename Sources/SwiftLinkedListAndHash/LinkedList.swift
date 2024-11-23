@@ -209,7 +209,7 @@ public extension LinkedListNode {
             let pself = Unsafe.addressOf(&self)
             let pprev = vars.___prev_
             let pnext = vars.___next_
-            return pprev != pnext && pprev != nil && pnext != nil
+            return pprev != pself && pnext != pself && pprev != nil && pnext != nil
         }
     }
 

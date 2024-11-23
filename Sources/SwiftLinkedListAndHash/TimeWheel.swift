@@ -186,6 +186,8 @@ public class TimeWheel<NODE: TimeNode> {
             } else {
                 // should be put into ticks
                 prevp.pointee.add(current: current, precision: prevPrecision, n: &pn.pointee)
+                let raw = Unsafe.ptr2raw(pn)
+                Unsafe.releaseNativeRef(raw.advanced(by: -(NODE.fieldOffset + CLASS_HEADER_LEN)))
             }
         }
     }
