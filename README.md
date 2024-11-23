@@ -232,14 +232,14 @@ struct TimeElemNode: TimeNode {
 //   4. third level has 24 ticks, which means 1 day
 // the timewheel can safely handle time events 23 hours later after the last `poll()`
 // and could handle maximum 24 hours time events
-let w = TimeWheel<TimeElemNode>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
+var w = TimeWheel<TimeElemNode>(currentTimeMillis: now, precisionMillis: 1000, levelTicks: 60, 60, 24)
 
 let elem1 = TimeElem(1)
-elem1.node.triggerTime = 120_000 // will trigger after 2 minutes
-_ = elem1.node.addInto(wheel: w) // add the time event into timewheel
+elem1.node.triggerTime = now + 120_000 // will trigger after 2 minutes
+_ = elem1.node.addInto(wheel: &w) // add the time event into timewheel
 
 // get triggered time events
-let res = w.poll(currentTimeMillis: /* ... */)
+let res = w.poll(currentTimeMillis: now)
 // iterate through the triggered time events
 for e in ret.list.seq() {
     print(e.num)
@@ -247,10 +247,12 @@ for e in ret.list.seq() {
 
 let elem2 = TimeElem(2)
 elem2.node.triggerTime = 1000 * 60 * 60 * 24 + 1 // more than 24 hours
-let succeeded = elem2.node.addInto(wheel: w) // succeeded == false
+let succeeded = elem2.node.addInto(wheel: &w) // succeeded == false
+
+w.destroy()
 ```
 
-Both the `TimeWheel` and result of `poll()` are reference counted, so they can be automatically released.  
+The result of `poll()` is reference counted, so the time events can be automatically released.  
 
 ## NOTE
 

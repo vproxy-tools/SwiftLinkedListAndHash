@@ -3,10 +3,10 @@ import Testing
 
 class TestTimeWheel {
     @Test func simple() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let next = w.nextTimeAccurate()
         #expect(next == 110_000)
@@ -22,10 +22,10 @@ class TestTimeWheel {
     }
 
     @Test func withinThisTick() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 100_010
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         var ret = w.poll(currentTimeMillis: 100_000)
         #expect(ret.list.first() === elem1)
@@ -35,10 +35,10 @@ class TestTimeWheel {
     }
 
     @Test func inThePast() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 90000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let next = w.nextTimeAccurate()
         #expect(next == 100_000)
@@ -51,14 +51,14 @@ class TestTimeWheel {
     }
 
     @Test func multipleInOneTick() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 110_050
-        _ = elem2.node.addInto(wheel: w)
+        _ = elem2.node.addInto(wheel: &w)
 
         let ret = w.poll(currentTimeMillis: 110_000)
 
@@ -75,14 +75,14 @@ class TestTimeWheel {
     }
 
     @Test func twoTicksTwoPoll() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 120_000
-        _ = elem2.node.addInto(wheel: w)
+        _ = elem2.node.addInto(wheel: &w)
 
         var ret = w.poll(currentTimeMillis: 115_000)
         #expect(ret.list.first() === elem1)
@@ -92,14 +92,14 @@ class TestTimeWheel {
     }
 
     @Test func multipleTicksOnePoll() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 110_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 120_000
-        _ = elem2.node.addInto(wheel: w)
+        _ = elem2.node.addInto(wheel: &w)
 
         let ret = w.poll(currentTimeMillis: 120_000)
 
@@ -116,10 +116,10 @@ class TestTimeWheel {
     }
 
     @Test func expand() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 175_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         var next = w.nextTimeAccurate()
         #expect(next == 175_000)
@@ -135,23 +135,23 @@ class TestTimeWheel {
     }
 
     @Test func returnOnExpand() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 175_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let ret = w.poll(currentTimeMillis: 175_000)
         #expect(ret.list.first() === elem1)
     }
 
     @Test func expandReturnAndFillTicks() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 175_000
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
         let elem2 = TimeElem(2)
         elem2.node.triggerTime = 178_000
-        _ = elem2.node.addInto(wheel: w)
+        _ = elem2.node.addInto(wheel: &w)
 
         var ret = w.poll(currentTimeMillis: 175_000)
         #expect(ret.list.first() === elem1)
@@ -160,20 +160,20 @@ class TestTimeWheel {
     }
 
     @Test func expandThroughMultipleLevels() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 100_000 + 1000 * 60 * 60 * 5 // 5 hours later
-        _ = elem1.node.addInto(wheel: w)
+        _ = elem1.node.addInto(wheel: &w)
 
         let ret = w.poll(currentTimeMillis: 100_000 + 1000 * 60 * 60 * 5)
         #expect(ret.list.first() === elem1)
     }
 
     @Test func addUnableToFillElem() {
-        let w = TimeWheel<TimeElemNode>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
+        var w = TimeWheel<TimeElemNode>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 1000 * 60 * 60 * 24 + 1 // more than 24 hours
-        let succeeded = elem1.node.addInto(wheel: w)
+        let succeeded = elem1.node.addInto(wheel: &w)
         #expect(!succeeded)
     }
 }

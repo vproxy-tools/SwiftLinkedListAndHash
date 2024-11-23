@@ -1,4 +1,4 @@
-public class TimeWheel<NODE: TimeNode> {
+public struct TimeWheel<NODE: TimeNode> {
     @usableFromInline let precisionMillis: Int64
     @usableFromInline let totalLevels: Int
     @usableFromInline let maxTime: Int64
@@ -109,7 +109,7 @@ public class TimeWheel<NODE: TimeNode> {
     }
 
     @inlinable @inline(__always)
-    public func poll(currentTimeMillis: Int64) -> LinkedListRef<NODE> {
+    public mutating func poll(currentTimeMillis: Int64) -> LinkedListRef<NODE> {
         let lastTs = lastTs
         self.lastTs = currentTimeMillis
 
@@ -193,7 +193,7 @@ public class TimeWheel<NODE: TimeNode> {
     }
 
     @inlinable @inline(__always)
-    deinit {
+    public func destroy() {
         for i in 0 ..< totalLevels {
             let p = self[i]
             for j in 0 ..< p.pointee.tickCount {
@@ -209,7 +209,7 @@ public protocol TimeNode<V>: LinkedListNode {
 
 public extension TimeNode {
     @inlinable @inline(__always)
-    mutating func addInto(wheel: TimeWheel<Self>) -> Bool {
+    mutating func addInto(wheel: inout TimeWheel<Self>) -> Bool {
         return wheel.add(n: &self)
     }
 }
