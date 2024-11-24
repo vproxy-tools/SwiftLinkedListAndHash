@@ -23,7 +23,7 @@ public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: Linke
         if n <= 0 {
             return 1
         }
-        if (n & (n - 1)) != 0 {
+        if (n & (n - 1)) == 0 {
             return n
         }
         var n = n
