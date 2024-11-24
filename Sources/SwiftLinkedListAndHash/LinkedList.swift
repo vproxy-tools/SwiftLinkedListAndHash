@@ -27,7 +27,12 @@ public struct LinkedList<NODE: LinkedListNode> {
     }
 
     @inlinable @inline(__always)
-    public mutating func seq() -> LinkedListNodeSeq<NODE.V> {
+    public mutating func seq() -> LinkedListSeq<NODE.V> {
+        return LinkedListSeq(head: Unsafe.addressOf(&head), offset: NODE.fieldOffset + CLASS_HEADER_LEN)
+    }
+
+    @inlinable @inline(__always)
+    public mutating func nodeSeq() -> LinkedListNodeSeq<NODE> {
         return LinkedListNodeSeq(head: Unsafe.addressOf(&head), offset: NODE.fieldOffset + CLASS_HEADER_LEN)
     }
 
@@ -58,9 +63,6 @@ public struct LinkedList<NODE: LinkedListNode> {
             var ret = 0
             var node = head.vars.___next_
             let head = Unsafe.addressOf(&head)
-            if node == nil {
-                return 0
-            }
             while node != head {
                 ret += 1
                 let p: UnsafePointer<NODE> = Unsafe.raw2ptr(node!)
@@ -69,22 +71,36 @@ public struct LinkedList<NODE: LinkedListNode> {
             return ret
         }
     }
+
+    @inlinable @inline(__always)
+    public mutating func isEmpty() -> Bool {
+        let head = Unsafe.addressOf(&head)
+        return self.head.vars.___next_ == head || self.head.vars.___next_ == nil
+    }
 }
 
 public class LinkedListRef<NODE: LinkedListNode> {
-    public var list = LinkedList<NODE>()
+    public var pointee = LinkedList<NODE>()
     @inlinable @inline(__always)
-    public var count: Int { list.count }
+    public var count: Int { pointee.count }
 
     @inlinable @inline(__always)
-    public init() {}
+    public init() {
+        pointee.selfInit()
+    }
 
     @inlinable @inline(__always)
-    public func seq() -> LinkedListNodeSeq<NODE.V> { list.seq() }
+    public func seq() -> LinkedListSeq<NODE.V> { pointee.seq() }
+
+    @inlinable @inline(__always)
+    public func nodeSeq() -> LinkedListNodeSeq<NODE> { pointee.nodeSeq() }
+
+    @inlinable @inline(__always)
+    public func isEmpty() -> Bool { pointee.isEmpty() }
 
     @inlinable @inline(__always)
     deinit {
-        list.destroy()
+        pointee.destroy()
     }
 }
 
@@ -203,6 +219,16 @@ public extension LinkedListNode {
     }
 
     @inlinable @inline(__always)
+    mutating func addInto(list: LinkedListRef<Self>) {
+        add(before: &list.pointee.head)
+    }
+
+    @inlinable @inline(__always)
+    mutating func insertInto(list: LinkedListRef<Self>) {
+        add(after: &list.pointee.head)
+    }
+
+    @inlinable @inline(__always)
     var isInList: Bool {
         @inlinable @inline(__always)
         mutating get {
@@ -242,9 +268,9 @@ public extension LinkedListNode {
     }
 }
 
-public struct LinkedListNodeSeq<V: AnyObject>: Sequence {
+public struct LinkedListSeq<V: AnyObject>: Sequence {
     public typealias Element = V
-    public typealias Iterator = LinkedListNodeIterator<V>
+    public typealias Iterator = LinkedListIterator<V>
     @usableFromInline var head: UnsafeRawPointer
     @usableFromInline let offset: Int
 
@@ -255,12 +281,12 @@ public struct LinkedListNodeSeq<V: AnyObject>: Sequence {
     }
 
     @inlinable @inline(__always)
-    public func makeIterator() -> LinkedListNodeIterator<V> {
-        return LinkedListNodeIterator(head: head, offset: offset)
+    public func makeIterator() -> LinkedListIterator<V> {
+        return LinkedListIterator(head: head, offset: offset)
     }
 }
 
-public struct LinkedListNodeIterator<V: AnyObject>: IteratorProtocol {
+public struct LinkedListIterator<V: AnyObject>: IteratorProtocol {
     public typealias Element = V
     @usableFromInline let head: UnsafeRawPointer
     @usableFromInline var current: UnsafeRawPointer?
@@ -280,6 +306,50 @@ public struct LinkedListNodeIterator<V: AnyObject>: IteratorProtocol {
             return nil
         }
         let e: V = Unsafe.convertFromNativeKeepRef(current!.advanced(by: -offset))
+        let next: UnsafePointer<UnsafeRawPointer?> = Unsafe.raw2ptr(current!.advanced(by: 8))
+        current = next.pointee
+        return e
+    }
+}
+
+public struct LinkedListNodeSeq<NODE: LinkedListNode>: Sequence {
+    public typealias Element = UnsafeMutablePointer<NODE>
+    public typealias Iterator = LinkedListNodeIterator<NODE>
+    @usableFromInline var head: UnsafeRawPointer
+    @usableFromInline let offset: Int
+
+    @inlinable @inline(__always)
+    init(head: UnsafeRawPointer, offset: Int) {
+        self.head = head
+        self.offset = offset
+    }
+
+    @inlinable @inline(__always)
+    public func makeIterator() -> LinkedListNodeIterator<NODE> {
+        return LinkedListNodeIterator(head: head, offset: offset)
+    }
+}
+
+public struct LinkedListNodeIterator<NODE: LinkedListNode>: IteratorProtocol {
+    public typealias Element = UnsafeMutablePointer<NODE>
+    @usableFromInline let head: UnsafeRawPointer
+    @usableFromInline var current: UnsafeRawPointer?
+    @usableFromInline let offset: Int
+
+    @inlinable @inline(__always)
+    init(head: UnsafeRawPointer, offset: Int) {
+        self.head = head
+        let next: UnsafePointer<UnsafeRawPointer?> = Unsafe.raw2ptr(head.advanced(by: 8))
+        current = next.pointee
+        self.offset = offset
+    }
+
+    @inlinable @inline(__always)
+    public mutating func next() -> UnsafeMutablePointer<NODE>? {
+        if current == nil || current == head {
+            return nil
+        }
+        let e: UnsafeMutablePointer<NODE> = Unsafe.raw2mutptr(current!)
         let next: UnsafePointer<UnsafeRawPointer?> = Unsafe.raw2ptr(current!.advanced(by: 8))
         current = next.pointee
         return e

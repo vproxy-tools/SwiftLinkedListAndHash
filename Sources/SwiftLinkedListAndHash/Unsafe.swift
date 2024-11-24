@@ -46,6 +46,9 @@
     public static func retainNativeRef(_ p: UnsafeRawPointer) {
         _ = Unmanaged<AnyObject>.fromOpaque(p).retain()
     }
+
+    @inlinable @inline(__always)
+    public static func any2mutptr<T>(_ p: UnsafeMutablePointer<T>) -> UnsafeMutablePointer<T> { p }
 }
 
 @_optimize(none) @inlinable @inline(__always)

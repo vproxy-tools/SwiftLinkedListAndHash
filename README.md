@@ -232,11 +232,11 @@ struct TimeElemNode: TimeNode {
 //   4. third level has 24 ticks, which means 1 day
 // the timewheel can safely handle time events 23 hours later after the last `poll()`
 // and could handle maximum 24 hours time events
-var w = TimeWheel<TimeElemNode>(currentTimeMillis: now, precisionMillis: 1000, levelTicks: 60, 60, 24)
+let w = TimeWheelRef<TimeElemNode>(currentTimeMillis: now, precisionMillis: 1000, levelTicks: 60, 60, 24)
 
 let elem1 = TimeElem(1)
 elem1.node.triggerTime = now + 120_000 // will trigger after 2 minutes
-_ = elem1.node.addInto(wheel: &w) // add the time event into timewheel
+_ = elem1.node.addInto(wheel: w) // add the time event into timewheel
 
 // get triggered time events
 let res = w.poll(currentTimeMillis: now)
@@ -246,10 +246,8 @@ for e in ret.list.seq() {
 }
 
 let elem2 = TimeElem(2)
-elem2.node.triggerTime = 1000 * 60 * 60 * 24 + 1 // more than 24 hours
-let succeeded = elem2.node.addInto(wheel: &w) // succeeded == false
-
-w.destroy()
+elem2.node.triggerTime = now + 1000 * 60 * 60 * 24 + 1 // more than 24 hours
+let succeeded = elem2.node.addInto(wheel: w) // succeeded == false
 ```
 
 The result of `poll()` is reference counted, so the time events can be automatically released.  
@@ -271,3 +269,6 @@ When compiled with `-Ounchecked`, you **MUST** ensure the objects of your value 
 In some cases the compiler may think that they are short lived and they could be released without checking the reference counter.
 
 You can use `ENSURE_REFERENCE_COUNTED(elem)` to ensure it's reference counted.
+
+When using the collections, you must make sure `w.destroy()` is called after finished using the collection,
+you can store the collections inside a `class`, and destroy them in the `deinit {}` block.
