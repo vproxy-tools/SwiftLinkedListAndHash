@@ -52,7 +52,7 @@ class TestTimeWheelMemoryLeak {
         var w = TimeWheel<TimeElemNodeLeak>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 10, 10, 10)
         addTimeEvents(&w)
 
-        poll(&w, 30_000, expectedCount: 2)
+        poll(&w, 30000, expectedCount: 2)
         #expect(testLinkedListDeinitCount == 2)
 
         w.destroy()
@@ -67,7 +67,7 @@ class TestTimeWheelMemoryLeak {
         var w = TimeWheel<TimeElemNodeLeak>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 10, 10, 10)
         addTimeEvents(&w)
 
-        poll(&w, 25_000, expectedCount: 2)
+        poll(&w, 25000, expectedCount: 2)
         #expect(testLinkedListDeinitCount == 2)
 
         w.destroy()
@@ -80,7 +80,7 @@ class TestTimeWheelMemoryLeak {
         _ = elem1.node.addInto(wheel: &w)
 
         let elem2 = TimeElemLeak(2)
-        elem2.node.triggerTime = 25_000
+        elem2.node.triggerTime = 25000
         _ = elem2.node.addInto(wheel: &w)
 
         ENSURE_REFERENCE_COUNTED(elem1, elem2)
@@ -98,6 +98,7 @@ class TimeElemLeak {
     init(_ num: Int) {
         self.num = num
     }
+
     deinit {
         testLinkedListDeinitCount += 1
     }
@@ -105,7 +106,7 @@ class TimeElemLeak {
 
 struct TimeElemNodeLeak: TimeNode {
     static let fieldOffset: Int = 0
-    
+
     typealias V = TimeElemLeak
     var vars = LinkedListNodeVars()
     var triggerTime: Int64 = 0

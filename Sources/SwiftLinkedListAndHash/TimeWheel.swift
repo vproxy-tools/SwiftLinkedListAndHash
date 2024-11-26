@@ -38,7 +38,7 @@ public struct TimeWheel<NODE: TimeNode> {
     public subscript(_ index: Int) -> UnsafeMutablePointer<TimeLevel<NODE>> {
         @inlinable @inline(__always)
         mutating get {
-            Unsafe.any2mutptr(&levels[index])
+            Unsafe.addressOf(evenMoreUnsafe: &levels[index])
         }
     }
 
@@ -122,7 +122,7 @@ public struct TimeWheel<NODE: TimeNode> {
         self.lastTs = currentTimeMillis
 
         let ret = LinkedListRef<NODE>()
-        var tail: UnsafeMutablePointer<NODE> = Unsafe.raw2mutptr(Unsafe.addressOf(&ret.pointee.head))
+        var tail: UnsafeMutablePointer<NODE> = Unsafe.addressOf(evenMoreUnsafe: &ret.pointee.head)
 
         var precision = precisionMillis
         for levelIdx in 0 ..< levels.count {
@@ -263,7 +263,7 @@ public struct TimeLevel<NODE: TimeNode> {
     public subscript(_ index: Int) -> UnsafeMutablePointer<LinkedList<NODE>> {
         @inlinable @inline(__always)
         mutating get {
-            let ret = Unsafe.any2mutptr(&ticks[index])
+            let ret = Unsafe.addressOf(evenMoreUnsafe: &ticks[index])
             return ret
         }
     }

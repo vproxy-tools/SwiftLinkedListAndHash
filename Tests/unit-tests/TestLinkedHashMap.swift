@@ -86,6 +86,10 @@ class TestLinkedHashMap {
         #expect(res.data == 0xf123_e456_d789_cbaf)
     }
 
+    @Test func refAndDeinit() { // might crash after calling .destroy() if the map is using ~Copyable
+        _ = MapHolder(1024)
+    }
+
     private func add(_ map: inout LinkedHashMap<ValueNode>) -> (Value, Value) {
         let value1 = Value(key: Key(a: 0xf123_4567, b: 0xf123), data: 0xf123_e456_d789_cbaf)
         let value2 = Value(key: Key(a: 0xf123_4566, b: 0xf122), data: 0xf123_e456_d789_cbae)
@@ -97,6 +101,17 @@ class TestLinkedHashMap {
     private func addAndDel(_ map: inout LinkedHashMap<ValueNode>) {
         let (v1, _) = add(&map)
         v1.node.removeSelf()
+    }
+}
+
+class MapHolder {
+    var map: LinkedHashMap<ValueNode>
+    init(_ n: Int) {
+        map = .init(n)
+    }
+
+    deinit {
+        map.destroy()
     }
 }
 

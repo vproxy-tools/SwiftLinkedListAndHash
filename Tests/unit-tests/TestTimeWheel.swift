@@ -39,7 +39,7 @@ class TestTimeWheel {
     @Test func inThePast() {
         var w = TimeWheel<TimeElemNode>(currentTimeMillis: 100_000, precisionMillis: 1000, levelTicks: 60, 60, 24)
         let elem1 = TimeElem(1)
-        elem1.node.triggerTime = 90_000
+        elem1.node.triggerTime = 90000
         _ = elem1.node.addInto(wheel: &w)
         #expect(w[0].pointee[0].pointee.count == 1)
 
@@ -211,7 +211,7 @@ class TestTimeWheel {
 
     @Test func wrapLastLevel() {
         var w = TimeWheel<TimeElemNode>(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
-        let _ = w.poll(currentTimeMillis: 1000 * 60 * 60 * 12)
+        _ = w.poll(currentTimeMillis: 1000 * 60 * 60 * 12)
 
         let elem1 = TimeElem(1)
         elem1.node.triggerTime = 1000 * 60 * 60 * (12 + 13)
@@ -226,6 +226,21 @@ class TestTimeWheel {
         for e in res.seq() {
             #expect(e === elem1)
         }
+    }
+
+    @Test func refAndDeinit() { // might crash after calling .destroy() if the map is using ~Copyable
+        _ = TimeWheelHolder()
+    }
+}
+
+class TimeWheelHolder {
+    var w: TimeWheel<TimeElemNode>
+    init() {
+        w = .init(currentTimeMillis: 0, precisionMillis: 1000, levelTicks: 60, 60, 24)
+    }
+
+    deinit {
+        w.destroy()
     }
 }
 

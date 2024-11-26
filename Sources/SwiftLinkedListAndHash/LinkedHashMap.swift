@@ -1,6 +1,6 @@
 public typealias LinkedHashMap<ENTRY: LinkedHashMapEntry> = GeneralLinkedHashMap<LinkedHash<ENTRY>, ENTRY>
 
-public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: LinkedHashMapEntry>: ~Copyable {
+public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: LinkedHashMapEntry> {
     @usableFromInline var modsz: Int { hashes.count - 1 }
     @usableFromInline var hashes: [HASH]
 
@@ -36,7 +36,12 @@ public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: Linke
     }
 
     @inlinable @inline(__always)
-    public subscript(_ i: Int) -> UnsafeMutablePointer<HASH> {
+    public func hash(of key: ENTRY.K) -> UnsafeMutablePointer<HASH> {
+        return hash(ofIndex: indexOf(key: key))
+    }
+
+    @inlinable @inline(__always)
+    public func hash(ofIndex i: Int) -> UnsafeMutablePointer<HASH> {
         let p: UnsafeMutablePointer<HASH> = Unsafe.raw2mutptr(hashes.withUnsafeBufferPointer { p in p.baseAddress! })
         return p.advanced(by: i)
     }
@@ -47,10 +52,7 @@ public struct GeneralLinkedHashMap<HASH: LinkedHashProtocol<ENTRY>, ENTRY: Linke
     }
 
     @inlinable @inline(__always)
-    public subscript(_ key: ENTRY.K) -> ENTRY.V? {
-        @inlinable @inline(__always)
-        mutating get { self[indexOf(key: key)].pointee[key] }
-    }
+    public subscript(_ key: ENTRY.K) -> ENTRY.V? { hash(of: key).pointee[key] }
 
     @inlinable @inline(__always)
     public mutating func destroy() {
@@ -79,7 +81,7 @@ public class GeneralLinkedHashMapRef<HASH: LinkedHashProtocol<ENTRY>, ENTRY: Lin
     }
 }
 
-public protocol LinkedHashProtocol<ENTRY>: ~Copyable {
+public protocol LinkedHashProtocol<ENTRY> {
     associatedtype ENTRY: LinkedHashMapEntry
 
     var list: LinkedList<ENTRY> { get set }
@@ -129,12 +131,12 @@ public protocol LinkedHashMapEntry<K, V>: LinkedListNode {
 public extension LinkedHashMapEntry {
     @inlinable @inline(__always)
     mutating func addInto<HASH: LinkedHashProtocol<Self>>(map: inout GeneralLinkedHashMap<HASH, Self>) {
-        addInto(list: &(map[map.indexOf(key: key())].pointee.list))
+        addInto(list: &(map.hash(of: key()).pointee.list))
     }
 
     @inlinable @inline(__always)
     mutating func insertInto<HASH: LinkedHashProtocol<Self>>(map: inout GeneralLinkedHashMap<HASH, Self>) {
-        insertInto(list: &(map[map.indexOf(key: key())].pointee.list))
+        insertInto(list: &(map.hash(of: key()).pointee.list))
     }
 
     @inlinable @inline(__always)

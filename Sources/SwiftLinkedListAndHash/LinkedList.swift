@@ -112,7 +112,7 @@ public struct LinkedListNodeVars {
     public init() {}
 }
 
-public protocol LinkedListNode<V>: ~Copyable {
+public protocol LinkedListNode<V> {
     associatedtype V: AnyObject
 
     var vars: LinkedListNodeVars { get set }
@@ -240,7 +240,14 @@ public extension LinkedListNode {
     }
 
     @inlinable @inline(__always)
-    mutating func removeSelf(releaseRef: Bool = true) {
+    mutating func removeSelf() {
+        removeSelf(releaseRef: true)
+    }
+}
+
+extension LinkedListNode {
+    @inlinable @inline(__always)
+    mutating func removeSelf(releaseRef: Bool) {
         if !isInList {
             return
         }

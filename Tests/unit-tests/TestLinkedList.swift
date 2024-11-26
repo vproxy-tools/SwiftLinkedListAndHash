@@ -218,6 +218,10 @@ class TestLinkedList {
         #expect(e.a == 9)
     }
 
+    @Test func refAndDeinit() { // might crash after calling .destroy() if the map is using ~Copyable
+        _ = ListHolder()
+    }
+
     private func addNodes(_ head1: inout LinkedList<ElemNode1>, _ head2: inout LinkedList<ElemNode2>) -> (Elem, Elem, Elem, Elem) {
         let e1 = Elem(a: 0xf123, b: 0xe456_f789, c: 0xd012, d: 0xfe_dcba_0fed_cba0)
         let e2 = Elem(a: 0xf122, b: 0xe456_f788, c: 0xd011, d: 0xfe_dcba_0fed_cba1)
@@ -240,6 +244,18 @@ class TestLinkedList {
         e2.node1.removeSelf()
         e2.node2.removeSelf()
         e4.node2.removeSelf()
+    }
+}
+
+class ListHolder {
+    var list: LinkedList<ElemNode1>
+    init() {
+        list = .init()
+        list.selfInit()
+    }
+
+    deinit {
+        list.destroy()
     }
 }
 
